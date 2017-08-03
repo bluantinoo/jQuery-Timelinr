@@ -8,7 +8,10 @@ http://www.opensource.org/licenses/mit-license.php
 
 instructions: http://www.csslab.cl/2011/08/18/jquery-timelinr/
 ---------------------------------- */
+(function($){
+	
 
+	
 jQuery.fn.timelinr = function(options){
 	// default plugin settings
 	settings = jQuery.extend({
@@ -30,7 +33,9 @@ jQuery.fn.timelinr = function(options){
 		autoPlayDirection: 				'forward',		// value: forward | backward, default to forward
 		autoPlayPause: 						2000					// value: integer (1000 = 1 seg), default to 2000 (2segs)
 	}, options);
-
+	
+	
+	
 	$(function(){
 		// Checks if required elements exist on page before initializing timelinr | improvement since 0.9.55
 		if ($(settings.datesDiv).length > 0 && $(settings.issuesDiv).length > 0) {
@@ -58,6 +63,7 @@ jQuery.fn.timelinr = function(options){
 				$(settings.issuesDiv).height(heightIssue*howManyIssues);
 				$(settings.datesDiv).height(heightDate*howManyDates).css('marginTop',heightContainer/2-heightDate/2);
 				var defaultPositionDates = parseInt($(settings.datesDiv).css('marginTop').substring(0,$(settings.datesDiv).css('marginTop').indexOf('px')));
+				
 			}
 
 			$(settings.datesDiv+' a').click(function(event){
@@ -104,6 +110,9 @@ jQuery.fn.timelinr = function(options){
 					$(settings.datesDiv).animate({'marginLeft':defaultPositionDates-(widthDate*currentIndex)},{queue:false, duration:'settings.datesSpeed'});
 				} else if(settings.orientation == 'vertical') {
 					$(settings.datesDiv).animate({'marginTop':defaultPositionDates-(heightDate*currentIndex)},{queue:false, duration:'settings.datesSpeed'});
+				//	var margins = defaultPositionDates-(heightDate*currentIndex);
+				//	$(settings.datesDiv)[0].style.setProperty( 'margin-top', margins, 'important' );
+					
 				}
 			});
 
@@ -244,21 +253,64 @@ jQuery.fn.timelinr = function(options){
 					});
 				}
 			}
+			
+			// move on scroll
+			var isTouch = isThisTouchDevice()
+			if(isTouch === false){
+				$(settings.containerDiv).bind( 'wheel', function(e){
+					e.preventDefault();
+					
+					// TODO: I should prevent multiple firing 
+					if (e.originalEvent.deltaY > 0){
+						moveUpOrDown('down')
+					} else {
+						moveUpOrDown('up')
+					} 
+				} );
+			}
+			
+			
 			// default position startAt, added since 0.9.3
 			$(settings.datesDiv+' li').eq(settings.startAt-1).find('a').trigger('click');
 			// autoPlay, added since 0.9.4
 			if(settings.autoPlay == 'true') {
-				// pause autoplay on hover
+				
+				var timer = setInterval(autoPlay, settings.autoPlayPause);
+
 				$(settings.containerDiv).hover(function(ev){
 					clearInterval(timer);
 				}, function(ev){
 					timer = setInterval(autoPlay, settings.autoPlayPause);
 				});
 				
+				
+				//setInterval(autoPlay, settings.autoPlayPause);
+				
 			}
 		}
 	});
 };
+
+
+// move up or down (called by move on scroll)
+function moveUpOrDown(direzione){
+
+	var currentDate = $(settings.datesDiv).find('a.'+settings.datesSelectedClass);
+	if(direzione == 'down') {
+		if(currentDate.parent().is('li:last-child')) {
+			$(settings.datesDiv+' li:first-child').find('a').trigger('click');
+		} else {
+			currentDate.parent().next().find('a').trigger('click');
+		}
+	} else if(direzione == 'up') {
+		if(currentDate.parent().is('li:first-child')) {
+			$(settings.datesDiv+' li:last-child').find('a').trigger('click');
+		} else {
+			currentDate.parent().prev().find('a').trigger('click');
+		}
+	}
+}
+
 
 // autoPlay, added since 0.9.4
 function autoPlay(){
@@ -277,3 +329,16 @@ function autoPlay(){
 		}
 	}
 }
+
+	function isThisTouchDevice() {
+        try {
+            document.createEvent('TouchEvent');
+			//console.log('is touch');
+            return true;
+        } catch (e) {
+			//console.log('is NOT touch');
+            return false;
+        }
+    }
+
+}(jQuery));
